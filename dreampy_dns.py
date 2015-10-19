@@ -15,6 +15,7 @@ if sys.version_info.major < 3:
     sys.exit(msg)
 
 import http.client
+import os
 import re
 import ssl
 import uuid
@@ -22,22 +23,22 @@ import logging
 #### We only need API Key and the domain to be updated.
 ####
 
-API_Key = ""
-domain = ""
+API_Key = os.environ.get("API_KEY")
+domain = os.environ.get("DOMAIN")
+
 #### Set the logging level.
 logging.basicConfig(level=logging.ERROR)
 # Set this to 1 if you want to update IPv6 record.
-CHECKIPV6=0
+CHECKIPV6 = os.environ.get("CHECKIPV6")
 
 ### START
 
 API_url = "api.dreamhost.com"
-IP_Addr = ""
-IPv6_Addr = ""
+IP_Addr = os.environ.get("IP_ADDR")
+IPv6_Addr = os.environ.get("IPV6_ADDR")
 DNS_IP = ""
 DNS_IPV6 = ""
 current_records = ""
-
 
 def rand_uuid():
     unique_id = str(uuid.uuid4())
@@ -122,7 +123,9 @@ def update_dns_record(protocol='ip'):
         add_dns_record(protocol)
 
 def make_url_string(command):
+    global API_Key
     """"str->str"""
+    logging.debug("API_Key %s", API_Key)
     url = "/?key=" + API_Key + "&cmd=" +command + "&unique_id=" + rand_uuid()
     return url
 
@@ -166,7 +169,8 @@ def make_it_so():
     current_records = get_dns_records()
     DNS_IP = get_dns_ip(current_records)
     logging.debug('DNS_IP: %s', DNS_IP)
-    IP_Addr = get_host_IP_Address()
+    if IP_Addr is None or IP_Addr == "":
+        IP_Addr = get_host_IP_Address()
     logging.debug('IP_Addr: %s', IP_Addr)
     if DNS_IP != IP_Addr:
         logging.info('Address different, will try to update.')
@@ -175,7 +179,8 @@ def make_it_so():
         logging.info('IP Record up-to-date.')
     if CHECKIPV6==1:
         DNS_IPV6 = get_dns_ip(current_records, "ipv6")
-        IPv6_Addr = get_host_IP_Address('ipv6')
+        if IPv6_Addr is None or IPv6_Addr == "":
+            IPv6_Addr = get_host_IP_Address('ipv6')
         if DNS_IPV6 != IPv6_Addr:
                 update_dns_record('ipv6')
         else:
